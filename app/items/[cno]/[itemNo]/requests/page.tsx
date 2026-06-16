@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { ArrowLeftIcon, InboxIcon } from "lucide-react";
 import { query } from "@/lib/db";
 import { ITEM_SQL, PURCHASE_SQL } from "@/lib/queries";
+import { sweepExpiredReservations } from "@/lib/reservation";
 import { requireUser } from "@/lib/auth";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/status-badge";
@@ -24,6 +25,8 @@ export default async function ReceivedRequestsPage({
   const { cno, itemNo } = await params;
   const itemNoNum = Number(itemNo);
 
+  // 화면 진입 시 48시간 초과 예약 자동취소 (단계 8)
+  await sweepExpiredReservations();
   const items = await query<Item>(ITEM_SQL.getById, { cno, itemNo: itemNoNum });
   const item = items[0];
   if (!item) notFound();

@@ -207,3 +207,24 @@ export const CHAT_SQL = {
     UPDATE message SET isRead = 'Y'
     WHERE roomNo = :roomNo AND sender = :otherSender AND isRead = 'N'`,
 };
+
+export const RESERVATION_SQL = {
+  /**
+   * 예약 자동취소 (단계 8). 48시간 초과한 '예약 중' 물품들의 구매 요청을 먼저 지운다.
+   * (시간은 바인드 변수 :hours 로 NUMTODSINTERVAL 사용 — 매직넘버는 상수에서.)
+   */
+  deleteExpiredRequests: `
+    DELETE FROM purchasereq pr
+    WHERE EXISTS (
+      SELECT 1 FROM item i
+      WHERE i.cno = pr.cno AND i.itemNo = pr.itemNo
+        AND i.sellStatus = :reserved
+        AND i.resDateTime < SYSTIMESTAMP - NUMTODSINTERVAL(:hours, 'HOUR')
+    )`,
+
+  /** 48시간 초과한 '예약 중' 물품을 '판매 중'으로 되돌리고 예약시각을 비운다. */
+  revertExpired: `
+    UPDATE item SET sellStatus = :onSale, resDateTime = NULL
+    WHERE sellStatus = :reserved
+      AND resDateTime < SYSTIMESTAMP - NUMTODSINTERVAL(:hours, 'HOUR')`,
+};
