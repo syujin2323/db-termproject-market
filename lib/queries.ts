@@ -107,6 +107,19 @@ export const PURCHASE_SQL = {
     JOIN customer c ON c.cno = p.requestCno
     WHERE p.cno = :cno AND p.itemNo = :itemNo
     ORDER BY p.reqDateTime DESC`,
+
+  /**
+   * 승인 → 예약 중 (단계 6). 판매 중일 때만 예약 중으로 바꾸고 승인 시각(resDateTime)을
+   * 기록한다(48h 자동취소 타이머 시작). rowsAffected=0이면 이미 예약/거래완료 상태.
+   */
+  approveReserve: `
+    UPDATE item SET sellStatus = :reserved, resDateTime = SYSTIMESTAMP
+    WHERE cno = :cno AND itemNo = :itemNo AND sellStatus = :onSale`,
+
+  /** 승인된 요청자(requestCno)를 제외한 나머지 구매 요청 자동 삭제 */
+  deleteOthers: `
+    DELETE FROM purchasereq
+    WHERE cno = :cno AND itemNo = :itemNo AND requestCno <> :requestCno`,
 };
 
 export const CHAT_SQL = {

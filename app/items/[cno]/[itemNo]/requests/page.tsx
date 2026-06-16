@@ -1,4 +1,4 @@
-// 받은 구매 요청 목록 (단계 4, 판매자 전용). 승인은 단계 6에서 추가된다.
+// 받은 구매 요청 목록 (단계 4) + 승인 (단계 6), 판매자 전용.
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ArrowLeftIcon, InboxIcon } from "lucide-react";
@@ -7,7 +7,9 @@ import { ITEM_SQL, PURCHASE_SQL } from "@/lib/queries";
 import { requireUser } from "@/lib/auth";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/status-badge";
+import { ApproveButton } from "@/components/approve-button";
 import { formatPrice, formatDateTime } from "@/lib/format";
+import { SELL_STATUS } from "@/lib/constants";
 import type { Item, PurchaseReq } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -32,6 +34,9 @@ export default async function ReceivedRequestsPage({
     cno,
     itemNo: itemNoNum,
   });
+
+  const onSale = item.sellStatus === SELL_STATUS.ON_SALE;
+  const reserved = item.sellStatus === SELL_STATUS.RESERVED;
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-6">
@@ -75,9 +80,23 @@ export default async function ReceivedRequestsPage({
                     {r.reqMessage}
                   </p>
                 )}
-                <p className="text-xs text-muted-foreground">
-                  {formatDateTime(r.reqDateTime)}
-                </p>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-xs text-muted-foreground">
+                    {formatDateTime(r.reqDateTime)}
+                  </p>
+                  {onSale ? (
+                    <ApproveButton
+                      cno={cno}
+                      itemNo={itemNoNum}
+                      requestCno={r.requestCno}
+                      requesterNickname={r.requesterNickname ?? r.requestCno}
+                    />
+                  ) : reserved ? (
+                    <span className="text-xs font-medium text-amber-700">
+                      예약된 요청
+                    </span>
+                  ) : null}
+                </div>
               </CardContent>
             </Card>
           ))}
