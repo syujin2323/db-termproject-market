@@ -24,6 +24,7 @@ export interface Item {
   /** 사진 보유 여부(pic1~3 중 존재하는 슬롯) — 목록/상세에서 이미지 URL 구성에 사용 */
   photoCount?: number;
   sellerNickname?: string;
+  sellerRegion?: string | null;
 }
 
 export interface PurchaseReq {

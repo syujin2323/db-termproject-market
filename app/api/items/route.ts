@@ -1,10 +1,42 @@
-// 물품 등록 API (단계 2). multipart/form-data 로 입력 + 사진 최대 3장(BLOB).
+// 물품 등록 API (단계 2) + 목록/검색 API (단계 3).
 import { NextRequest, NextResponse } from "next/server";
 import oracledb from "oracledb";
-import { withTransaction } from "@/lib/db";
+import { query, withTransaction } from "@/lib/db";
 import { ITEM_SQL } from "@/lib/queries";
+import { buildItemSearch } from "@/lib/search";
 import { getSessionCno } from "@/lib/session";
 import { SELL_STATUS, CATEGORIES } from "@/lib/constants";
+import type { Item } from "@/lib/types";
+
+/**
+ * 목록/검색 (단계 3).
+ * 쿼리스트링: conditions=<JSON 배열>, sort=latest|price_asc|price_desc
+ * 동적 WHERE는 buildItemSearch()가 바인드 변수로만 조립한다.
+ */
+export async function GET(req: NextRequest) {
+  try {
+    const sp = req.nextUrl.searchParams;
+    let conditions: unknown = [];
+    const raw = sp.get("conditions");
+    if (raw) {
+      try {
+        conditions = JSON.parse(raw);
+      } catch {
+        conditions = [];
+      }
+    }
+    const { where, orderBy, binds } = buildItemSearch(conditions, sp.get("sort"));
+    const sql = `${ITEM_SQL.listSelect} ${where} ${orderBy}`;
+    const items = await query<Item>(sql, binds);
+    return NextResponse.json({ items });
+  } catch (e) {
+    console.error("[GET /api/items]", e);
+    return NextResponse.json(
+      { error: "물품 목록을 불러오는 중 오류가 발생했습니다." },
+      { status: 500 }
+    );
+  }
+}
 
 const MAX_PHOTOS = 3;
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024; // 한 장당 5MB
