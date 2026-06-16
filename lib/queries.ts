@@ -228,3 +228,34 @@ export const RESERVATION_SQL = {
     WHERE sellStatus = :reserved
       AND resDateTime < SYSTIMESTAMP - NUMTODSINTERVAL(:hours, 'HOUR')`,
 };
+
+// 관리자 통계 (단계 9). 거래 완료(:done) 물품의 finalPrice 기준.
+// ※ TP-5에서 만든 질의가 있으면 이 두 SQL을 그대로 교체하면 된다.
+export const STATS_SQL = {
+  /** 그룹 함수 통계: 카테고리별 거래 건수/총액/평균 + ROLLUP 전체 합계 */
+  categoryRollup: `
+    SELECT
+      CASE WHEN GROUPING(category) = 1 THEN '전체' ELSE category END AS "category",
+      COUNT(*)               AS "dealCount",
+      SUM(finalPrice)        AS "totalAmount",
+      ROUND(AVG(finalPrice)) AS "avgAmount",
+      GROUPING(category)     AS "isTotal"
+    FROM item
+    WHERE sellStatus = :done
+    GROUP BY ROLLUP(category)
+    ORDER BY GROUPING(category), SUM(finalPrice) DESC`,
+
+  /** 윈도우 함수 통계: 판매자별 거래액 순위 (RANK() OVER) */
+  sellerRanking: `
+    SELECT
+      i.cno             AS "cno",
+      c.nickname        AS "nickname",
+      COUNT(*)          AS "dealCount",
+      SUM(i.finalPrice) AS "totalAmount",
+      RANK() OVER (ORDER BY SUM(i.finalPrice) DESC) AS "rank"
+    FROM item i
+    JOIN customer c ON c.cno = i.cno
+    WHERE i.sellStatus = :done
+    GROUP BY i.cno, c.nickname
+    ORDER BY SUM(i.finalPrice) DESC`,
+};
