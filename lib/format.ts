@@ -16,3 +16,11 @@ export function formatDateTime(d: Date | string | null | undefined): string {
     timeStyle: "short",
   }).format(date);
 }
+
+/** Date(또는 문자열) → "오후 3:21" (시:분만) */
+export function formatTime(d: Date | string | null | undefined): string {
+  if (!d) return "";
+  const date = typeof d === "string" ? new Date(d) : d;
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat("ko-KR", { timeStyle: "short" }).format(date);
+}

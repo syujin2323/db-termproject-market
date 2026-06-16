@@ -42,10 +42,13 @@ export interface ChatRoom {
   receiveCno: string; // 구매자
   cno: string; // 판매자
   itemNo: number;
-  createDateTime: Date;
-  unreadCount?: number;
+  createDateTime?: Date;
   itemTitle?: string;
-  partnerNickname?: string;
+  sellStatus?: string;
+  sellerNickname?: string;
+  buyerNickname?: string;
+  unreadCount?: number;
+  lastTime?: Date | null;
 }
 
 export interface Message {

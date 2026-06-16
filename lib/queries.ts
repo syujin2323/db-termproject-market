@@ -108,3 +108,81 @@ export const PURCHASE_SQL = {
     WHERE p.cno = :cno AND p.itemNo = :itemNo
     ORDER BY p.reqDateTime DESC`,
 };
+
+export const CHAT_SQL = {
+  /** (구매자 receiveCno, 판매자 cno, itemNo) 조합의 기존 방 찾기 — 중복 방지 */
+  findRoom: `
+    SELECT roomNo AS "roomNo" FROM chatroom
+    WHERE receiveCno = :receiveCno AND cno = :cno AND itemNo = :itemNo`,
+
+  /** 방 생성 (roomNo는 IDENTITY → RETURNING으로 받음) */
+  createRoom: `
+    INSERT INTO chatroom (receiveCno, cno, itemNo, createDateTime)
+    VALUES (:receiveCno, :cno, :itemNo, SYSTIMESTAMP)
+    RETURNING roomNo INTO :roomNo`,
+
+  /** 방 1개 상세 (+ 물품 제목/판매자·구매자 닉네임) */
+  getRoom: `
+    SELECT
+      r.roomNo       AS "roomNo",
+      r.cno          AS "cno",
+      r.receiveCno   AS "receiveCno",
+      r.itemNo       AS "itemNo",
+      i.title        AS "itemTitle",
+      i.sellStatus   AS "sellStatus",
+      s.nickname     AS "sellerNickname",
+      b.nickname     AS "buyerNickname"
+    FROM chatroom r
+    JOIN item i ON i.cno = r.cno AND i.itemNo = r.itemNo
+    JOIN customer s ON s.cno = r.cno
+    JOIN customer b ON b.cno = r.receiveCno
+    WHERE r.roomNo = :roomNo`,
+
+  /**
+   * 내가 참여한 방 목록 (판매자 cno=나 또는 구매자 receiveCno=나).
+   * unreadCount = 상대가 보낸 안 읽은 메시지 수
+   *   (내가 판매자면 상대='B', 구매자면 상대='S').
+   */
+  listRooms: `
+    SELECT
+      r.roomNo          AS "roomNo",
+      r.cno             AS "cno",
+      r.receiveCno      AS "receiveCno",
+      r.itemNo          AS "itemNo",
+      r.createDateTime  AS "createDateTime",
+      i.title           AS "itemTitle",
+      i.sellStatus      AS "sellStatus",
+      s.nickname        AS "sellerNickname",
+      b.nickname        AS "buyerNickname",
+      (SELECT COUNT(*) FROM message m
+         WHERE m.roomNo = r.roomNo AND m.isRead = 'N'
+           AND m.sender = CASE WHEN r.cno = :me THEN 'B' ELSE 'S' END) AS "unreadCount",
+      (SELECT MAX(m.sentDateTime) FROM message m WHERE m.roomNo = r.roomNo) AS "lastTime"
+    FROM chatroom r
+    JOIN item i ON i.cno = r.cno AND i.itemNo = r.itemNo
+    JOIN customer s ON s.cno = r.cno
+    JOIN customer b ON b.cno = r.receiveCno
+    WHERE r.cno = :me OR r.receiveCno = :me
+    ORDER BY NVL((SELECT MAX(m.sentDateTime) FROM message m WHERE m.roomNo = r.roomNo),
+                 r.createDateTime) DESC`,
+
+  /** 방의 메시지 목록 (보낸 순) */
+  listMessages: `
+    SELECT
+      seqNo        AS "seqNo",
+      sender       AS "sender",
+      sentDateTime AS "sentDateTime",
+      content      AS "content",
+      isRead       AS "isRead"
+    FROM message WHERE roomNo = :roomNo ORDER BY seqNo`,
+
+  /** 메시지 전송 (sender 'S'/'B', 기본 안읽음 'N') */
+  insertMessage: `
+    INSERT INTO message (roomNo, sender, sentDateTime, content, isRead)
+    VALUES (:roomNo, :sender, SYSTIMESTAMP, :content, 'N')`,
+
+  /** 내가 방에 들어가면 상대가 보낸 안 읽은 메시지를 읽음 처리 */
+  markRead: `
+    UPDATE message SET isRead = 'Y'
+    WHERE roomNo = :roomNo AND sender = :otherSender AND isRead = 'N'`,
+};

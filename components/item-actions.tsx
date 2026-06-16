@@ -2,13 +2,13 @@
 
 // 물품 상세의 행동 영역.
 // - 판매자(본인): 받은 구매 요청 목록으로 이동
-// - 구매자(타인, 로그인): 구매 요청 다이얼로그(금액+메시지)
-// - 비로그인/판매중 아님: 로그인 유도 / 비활성 안내
+// - 구매자(타인, 로그인): 구매 요청 다이얼로그(금액+메시지) + 채팅하기
+// - 비로그인: 로그인 유도 / 판매중 아님: 구매요청 비활성
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { HandCoinsIcon, InboxIcon } from "lucide-react";
+import { HandCoinsIcon, InboxIcon, MessageCircleIcon } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -50,6 +50,7 @@ export function ItemActions({
   const [reqMessage, setReqMessage] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [chatLoading, setChatLoading] = useState(false);
 
   const onSale = sellStatus === SELL_STATUS.ON_SALE;
 
@@ -65,27 +66,33 @@ export function ItemActions({
     );
   }
 
-  // 비로그인 → 로그인 유도
-  if (!currentCno) {
-    return (
-      <Button size="lg" className="w-full" onClick={() => router.push("/login")}>
-        <HandCoinsIcon /> 로그인하고 구매 요청하기
-      </Button>
-    );
+  // 채팅 시작(또는 기존 방으로 이동)
+  async function startChat() {
+    if (!currentCno) {
+      router.push("/login");
+      return;
+    }
+    setChatLoading(true);
+    try {
+      const res = await fetch("/api/chat/rooms", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cno, itemNo }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error ?? "채팅방을 열 수 없습니다.");
+        return;
+      }
+      router.push(`/chat/${data.roomNo}`);
+    } catch {
+      toast.error("네트워크 오류가 발생했습니다.");
+    } finally {
+      setChatLoading(false);
+    }
   }
 
-  // 판매 중이 아님 → 비활성 + 안내
-  if (!onSale) {
-    return (
-      <Button size="lg" className="w-full" disabled>
-        {sellStatus === SELL_STATUS.DONE
-          ? "거래 완료된 물품입니다"
-          : "예약 중인 물품입니다"}
-      </Button>
-    );
-  }
-
-  async function submit(e: FormEvent) {
+  async function submitRequest(e: FormEvent) {
     e.preventDefault();
     setError(null);
 
@@ -124,9 +131,33 @@ export function ItemActions({
 
   return (
     <>
-      <Button size="lg" className="w-full" onClick={() => setOpen(true)}>
-        <HandCoinsIcon /> 구매 요청하기
-      </Button>
+      <div className="flex gap-2">
+        {/* 구매 요청 */}
+        {onSale ? (
+          <Button
+            size="lg"
+            className="flex-1"
+            onClick={() => (currentCno ? setOpen(true) : router.push("/login"))}
+          >
+            <HandCoinsIcon /> 구매 요청
+          </Button>
+        ) : (
+          <Button size="lg" className="flex-1" disabled>
+            {sellStatus === SELL_STATUS.DONE ? "거래 완료됨" : "예약 중"}
+          </Button>
+        )}
+
+        {/* 채팅 */}
+        <Button
+          size="lg"
+          variant="outline"
+          className="flex-1"
+          onClick={startChat}
+          disabled={chatLoading}
+        >
+          <MessageCircleIcon /> 채팅하기
+        </Button>
+      </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
@@ -137,7 +168,7 @@ export function ItemActions({
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={submit} className="flex flex-col gap-4">
+          <form onSubmit={submitRequest} className="flex flex-col gap-4">
             <div className="grid gap-2">
               <Label htmlFor="reqPrice">희망 금액 (원)</Label>
               <Input
