@@ -18,9 +18,10 @@ export interface SearchCondition {
 }
 
 // 필드별 술어(predicate). p 는 바인드 플레이스홀더(":p0" 등).
+// 텍스트(제목/설명)는 UPPER()로 양쪽을 맞춰 대소문자 구분 없이 검색한다(예: bts=BTS).
 const FIELD_PREDICATE: Record<SearchField, (p: string) => string> = {
-  title: (p) => `i.title LIKE '%' || ${p} || '%'`,
-  description: (p) => `i.description LIKE '%' || ${p} || '%'`,
+  title: (p) => `UPPER(i.title) LIKE '%' || UPPER(${p}) || '%'`,
+  description: (p) => `UPPER(i.description) LIKE '%' || UPPER(${p}) || '%'`,
   category: (p) => `i.category = ${p}`,
   minPrice: (p) => `i.price >= ${p}`,
   maxPrice: (p) => `i.price <= ${p}`,
