@@ -33,6 +33,9 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# claude code 개인 로컬 설정 (공유 저장소에 올리지 않음)
+.claude/settings.local.json
+
 # vercel
 .vercel
 
