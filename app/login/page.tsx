@@ -14,6 +14,7 @@ import {
   CardDescription,
   CardContent,
 } from "@/components/ui/card";
+import { ADMIN_CNO } from "@/lib/constants";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -44,7 +45,8 @@ export default function LoginPage() {
         return;
       }
       toast.success(`${data.user.nickname}님, 환영합니다!`);
-      router.push("/");
+      // 관리자(c0)는 관리자 콘솔로, 일반 회원은 홈으로 분기 (TP-6 흐름)
+      router.push(data.user.cno === ADMIN_CNO ? "/admin" : "/");
       router.refresh();
     } catch {
       setError("네트워크 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");

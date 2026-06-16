@@ -5,6 +5,9 @@ import {
   MessageCircleIcon,
   ChartColumnBigIcon,
   UserIcon,
+  LayoutDashboardIcon,
+  UsersIcon,
+  PackageIcon,
 } from "lucide-react";
 import { getCurrentUser, isAdmin } from "@/lib/auth";
 import { AuthArea } from "@/components/auth-area";
@@ -38,11 +41,22 @@ export async function Header() {
               </Link>
             </>
           )}
-          {/* 관리자: 통계 */}
+          {/* 관리자: 콘솔/회원/물품/통계 */}
           {admin && (
-            <Link href="/admin/stats" className={navLink}>
-              <ChartColumnBigIcon /> 통계
-            </Link>
+            <>
+              <Link href="/admin" className={navLink}>
+                <LayoutDashboardIcon /> 콘솔
+              </Link>
+              <Link href="/admin/members" className={navLink}>
+                <UsersIcon /> 회원
+              </Link>
+              <Link href="/admin/items" className={navLink}>
+                <PackageIcon /> 물품
+              </Link>
+              <Link href="/admin/stats" className={navLink}>
+                <ChartColumnBigIcon /> 통계
+              </Link>
+            </>
           )}
         </nav>
 

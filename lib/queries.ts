@@ -300,3 +300,41 @@ export const MYPAGE_SQL = {
     WHERE p.requestCno = :me
     ORDER BY p.reqDateTime DESC`,
 };
+
+// 관리자 콘솔 (TP-6 Page_adminHome / Page_adminMember / Page_adminItem)
+export const ADMIN_SQL = {
+  /** 관리자 홈 요약 지표 (관리자 c0 제외한 회원 수 등) */
+  summary: `
+    SELECT
+      (SELECT COUNT(*) FROM customer WHERE cno <> :admin)         AS "memberCount",
+      (SELECT COUNT(*) FROM item)                                  AS "itemCount",
+      (SELECT COUNT(*) FROM item WHERE sellStatus = :done)         AS "doneCount",
+      (SELECT COUNT(*) FROM item WHERE sellStatus = :reserved)     AS "reservedCount"
+    FROM dual`,
+
+  /** 회원 목록 (+ 등록 물품 수). 관리자 자신은 제외. */
+  members: `
+    SELECT
+      c.cno AS "cno", c.nickname AS "nickname", c.phone AS "phone", c.region AS "region",
+      (SELECT COUNT(*) FROM item i WHERE i.cno = c.cno) AS "itemCount"
+    FROM customer c
+    WHERE c.cno <> :admin
+    ORDER BY c.cno`,
+
+  /** 전체 물품/거래 목록 (판매자 닉네임·지역 포함) */
+  items: `
+    SELECT
+      i.cno AS "cno", i.itemNo AS "itemNo", i.title AS "title", i.category AS "category",
+      i.price AS "price", i.sellStatus AS "sellStatus", i.finalPrice AS "finalPrice",
+      i.regDateTime AS "regDateTime", c.nickname AS "sellerNickname", c.region AS "sellerRegion"
+    FROM item i JOIN customer c ON c.cno = i.cno
+    ORDER BY i.regDateTime DESC`,
+
+  // 물품 강제 삭제 (FK 때문에 자식 테이블부터 순서대로)
+  deleteMessagesOfItem: `
+    DELETE FROM message WHERE roomNo IN
+      (SELECT roomNo FROM chatroom WHERE cno = :cno AND itemNo = :itemNo)`,
+  deleteChatroomsOfItem: `DELETE FROM chatroom WHERE cno = :cno AND itemNo = :itemNo`,
+  deleteRequestsOfItem: `DELETE FROM purchasereq WHERE cno = :cno AND itemNo = :itemNo`,
+  deleteItem: `DELETE FROM item WHERE cno = :cno AND itemNo = :itemNo`,
+};
