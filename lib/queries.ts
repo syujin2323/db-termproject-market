@@ -77,3 +77,34 @@ export const ITEM_SQL = {
     FROM item i
     JOIN customer c ON c.cno = i.cno`,
 };
+
+export const PURCHASE_SQL = {
+  /** 동일 요청자가 이미 이 물품에 요청했는지 (중복 방지) */
+  existsForRequester: `
+    SELECT COUNT(*) AS "cnt" FROM purchasereq
+    WHERE requestCno = :requestCno AND cno = :cno AND itemNo = :itemNo`,
+
+  /** 물품에 달린 구매 요청 수 (판매자 화면 배지용) */
+  countForItem: `
+    SELECT COUNT(*) AS "cnt" FROM purchasereq WHERE cno = :cno AND itemNo = :itemNo`,
+
+  /** 구매 요청 등록 (요청 금액 + 메시지) */
+  insert: `
+    INSERT INTO purchasereq (requestCno, cno, itemNo, reqDateTime, reqPrice, reqMessage)
+    VALUES (:requestCno, :cno, :itemNo, SYSTIMESTAMP, :reqPrice, :reqMessage)`,
+
+  /** 한 물품의 받은 요청 목록 (+ 요청자 닉네임) — 판매자 화면 */
+  listForItem: `
+    SELECT
+      p.requestCno   AS "requestCno",
+      p.cno          AS "cno",
+      p.itemNo       AS "itemNo",
+      p.reqDateTime  AS "reqDateTime",
+      p.reqPrice     AS "reqPrice",
+      p.reqMessage   AS "reqMessage",
+      c.nickname     AS "requesterNickname"
+    FROM purchasereq p
+    JOIN customer c ON c.cno = p.requestCno
+    WHERE p.cno = :cno AND p.itemNo = :itemNo
+    ORDER BY p.reqDateTime DESC`,
+};

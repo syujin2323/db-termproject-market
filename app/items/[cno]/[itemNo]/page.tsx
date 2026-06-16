@@ -2,12 +2,16 @@
 import { notFound } from "next/navigation";
 import { ImageOffIcon, MapPinIcon } from "lucide-react";
 import { query } from "@/lib/db";
-import { ITEM_SQL } from "@/lib/queries";
+import { ITEM_SQL, PURCHASE_SQL } from "@/lib/queries";
+import { getCurrentUser } from "@/lib/auth";
 import { StatusBadge } from "@/components/status-badge";
+import { ItemActions } from "@/components/item-actions";
 import { Separator } from "@/components/ui/separator";
 import { formatPrice, formatDateTime } from "@/lib/format";
 import { SELL_STATUS } from "@/lib/constants";
 import type { Item } from "@/lib/types";
+
+export const dynamic = "force-dynamic";
 
 export default async function ItemDetailPage({
   params,
@@ -15,9 +19,22 @@ export default async function ItemDetailPage({
   params: Promise<{ cno: string; itemNo: string }>;
 }) {
   const { cno, itemNo } = await params;
-  const rows = await query<Item>(ITEM_SQL.getById, { cno, itemNo: Number(itemNo) });
+  const itemNoNum = Number(itemNo);
+  const rows = await query<Item>(ITEM_SQL.getById, { cno, itemNo: itemNoNum });
   const item = rows[0];
   if (!item) notFound();
+
+  // 현재 사용자 / 소유 여부 / (판매자면) 받은 요청 수
+  const user = await getCurrentUser();
+  const isOwner = user?.cno === item.cno;
+  let reqCount = 0;
+  if (isOwner) {
+    const c = await query<{ cnt: number }>(PURCHASE_SQL.countForItem, {
+      cno,
+      itemNo: itemNoNum,
+    });
+    reqCount = c[0]?.cnt ?? 0;
+  }
 
   const photoCount = item.photoCount ?? 0;
   const photoIndexes = Array.from({ length: photoCount }, (_, i) => i + 1);
@@ -88,6 +105,18 @@ export default async function ItemDetailPage({
             · 등록일 {formatDateTime(item.regDateTime)}
           </div>
         </dl>
+
+        <div className="mt-6">
+          <ItemActions
+            cno={item.cno}
+            itemNo={item.itemNo}
+            price={item.price}
+            sellStatus={item.sellStatus}
+            currentCno={user?.cno ?? null}
+            isOwner={isOwner}
+            reqCount={reqCount}
+          />
+        </div>
       </div>
     </div>
   );
