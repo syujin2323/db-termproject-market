@@ -76,6 +76,11 @@ export const ITEM_SQL = {
       c.region       AS "sellerRegion"
     FROM item i
     JOIN customer c ON c.cno = i.cno`,
+
+  /** 거래 완료 (단계 7): 예약 중인 물품만 '거래 완료'로 바꾸고 최종 금액 저장 */
+  complete: `
+    UPDATE item SET sellStatus = :done, finalPrice = :finalPrice
+    WHERE cno = :cno AND itemNo = :itemNo AND sellStatus = :reserved`,
 };
 
 export const PURCHASE_SQL = {
@@ -120,6 +125,9 @@ export const PURCHASE_SQL = {
   deleteOthers: `
     DELETE FROM purchasereq
     WHERE cno = :cno AND itemNo = :itemNo AND requestCno <> :requestCno`,
+
+  /** 물품의 모든 구매 요청 삭제 (거래 완료/예약 자동취소 시) */
+  deleteForItem: `DELETE FROM purchasereq WHERE cno = :cno AND itemNo = :itemNo`,
 };
 
 export const CHAT_SQL = {

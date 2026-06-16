@@ -8,6 +8,7 @@ import { requireUser } from "@/lib/auth";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/status-badge";
 import { ApproveButton } from "@/components/approve-button";
+import { CompleteTradeButton } from "@/components/complete-trade-button";
 import { formatPrice, formatDateTime } from "@/lib/format";
 import { SELL_STATUS } from "@/lib/constants";
 import type { Item, PurchaseReq } from "@/lib/types";
@@ -55,11 +56,39 @@ export default async function ReceivedRequestsPage({
         <StatusBadge status={item.sellStatus} />
       </div>
 
+      {/* 예약 중: 거래 완료 처리 패널 */}
+      {reserved && (
+        <Card className="mb-4 border-amber-200 bg-amber-50">
+          <CardContent className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-amber-800">
+              예약된 거래입니다. 거래가 끝나면 최종 금액을 입력해 완료하세요.
+            </p>
+            <CompleteTradeButton
+              cno={cno}
+              itemNo={itemNoNum}
+              defaultPrice={requests[0]?.reqPrice ?? item.price}
+            />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* 거래 완료됨 */}
+      {item.sellStatus === SELL_STATUS.DONE && (
+        <Card className="mb-4 bg-muted/40">
+          <CardContent className="text-sm text-muted-foreground">
+            거래가 완료된 물품입니다. 최종 거래가{" "}
+            <b className="text-foreground">{formatPrice(item.finalPrice)}</b>
+          </CardContent>
+        </Card>
+      )}
+
       {requests.length === 0 ? (
-        <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed py-16 text-muted-foreground">
-          <InboxIcon className="size-8" />
-          <span className="text-sm">아직 받은 구매 요청이 없습니다.</span>
-        </div>
+        item.sellStatus === SELL_STATUS.DONE ? null : (
+          <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed py-16 text-muted-foreground">
+            <InboxIcon className="size-8" />
+            <span className="text-sm">아직 받은 구매 요청이 없습니다.</span>
+          </div>
+        )
       ) : (
         <div className="flex flex-col gap-3">
           <p className="text-sm text-muted-foreground">
