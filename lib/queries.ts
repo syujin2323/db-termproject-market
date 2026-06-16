@@ -259,3 +259,44 @@ export const STATS_SQL = {
     GROUP BY i.cno, c.nickname
     ORDER BY SUM(i.finalPrice) DESC`,
 };
+
+// 마이페이지 (TP-6 Page_mySales / Page_reqReceived / Page_myReqSent)
+export const MYPAGE_SQL = {
+  /** 내 판매 물품 (+ 받은 요청 수) */
+  mySales: `
+    SELECT
+      i.cno AS "cno", i.itemNo AS "itemNo", i.title AS "title", i.category AS "category",
+      i.price AS "price", i.sellStatus AS "sellStatus", i.regDateTime AS "regDateTime",
+      i.finalPrice AS "finalPrice",
+      (CASE WHEN i.pic1 IS NOT NULL THEN 1 ELSE 0 END
+       + CASE WHEN i.pic2 IS NOT NULL THEN 1 ELSE 0 END
+       + CASE WHEN i.pic3 IS NOT NULL THEN 1 ELSE 0 END) AS "photoCount",
+      (SELECT COUNT(*) FROM purchasereq p WHERE p.cno = i.cno AND p.itemNo = i.itemNo) AS "reqCount"
+    FROM item i
+    WHERE i.cno = :me
+    ORDER BY i.regDateTime DESC`,
+
+  /** 내 물품들에 들어온 받은 구매요청 전체 */
+  receivedRequests: `
+    SELECT
+      p.requestCno AS "requestCno", c.nickname AS "requesterNickname",
+      p.cno AS "cno", p.itemNo AS "itemNo", i.title AS "itemTitle", i.sellStatus AS "sellStatus",
+      p.reqPrice AS "reqPrice", p.reqMessage AS "reqMessage", p.reqDateTime AS "reqDateTime"
+    FROM purchasereq p
+    JOIN item i ON i.cno = p.cno AND i.itemNo = p.itemNo
+    JOIN customer c ON c.cno = p.requestCno
+    WHERE i.cno = :me
+    ORDER BY p.reqDateTime DESC`,
+
+  /** 내가 보낸 구매요청 (+ 대상 물품 상태로 대기/승인 판별) */
+  sentRequests: `
+    SELECT
+      p.cno AS "cno", p.itemNo AS "itemNo", i.title AS "itemTitle", i.sellStatus AS "sellStatus",
+      i.price AS "itemPrice", p.reqPrice AS "reqPrice", p.reqMessage AS "reqMessage",
+      p.reqDateTime AS "reqDateTime", sc.nickname AS "sellerNickname"
+    FROM purchasereq p
+    JOIN item i ON i.cno = p.cno AND i.itemNo = p.itemNo
+    JOIN customer sc ON sc.cno = p.cno
+    WHERE p.requestCno = :me
+    ORDER BY p.reqDateTime DESC`,
+};

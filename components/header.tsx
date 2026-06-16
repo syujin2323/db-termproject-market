@@ -1,6 +1,11 @@
 // 상단 공통 헤더 (서버 컴포넌트). 로그인 상태/권한에 따라 메뉴가 달라진다.
 import Link from "next/link";
-import { PlusIcon, MessageCircleIcon, ChartColumnBigIcon } from "lucide-react";
+import {
+  PlusIcon,
+  MessageCircleIcon,
+  ChartColumnBigIcon,
+  UserIcon,
+} from "lucide-react";
 import { getCurrentUser, isAdmin } from "@/lib/auth";
 import { AuthArea } from "@/components/auth-area";
 import { buttonVariants } from "@/components/ui/button";
@@ -27,6 +32,9 @@ export async function Header() {
               </Link>
               <Link href="/chat" className={navLink}>
                 <MessageCircleIcon /> 채팅
+              </Link>
+              <Link href="/mypage" className={navLink}>
+                <UserIcon /> 마이페이지
               </Link>
             </>
           )}
