@@ -1,65 +1,128 @@
-import Image from "next/image";
+// 홈. 단계 1에서는 로그인 전/후·권한에 따라 다른 안내를 보여주는 랜딩으로 둔다.
+// (실제 물품 목록/검색은 단계 3에서 이 화면을 대체한다.)
+import Link from "next/link";
+import { PlusIcon, MessageCircleIcon, ChartColumnBigIcon } from "lucide-react";
+import { getCurrentUser, isAdmin } from "@/lib/auth";
+import { buttonVariants } from "@/components/ui/button";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
-export default function Home() {
+export default async function Home() {
+  const user = await getCurrentUser();
+  const admin = isAdmin(user);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <div className="mx-auto max-w-5xl px-4 py-12">
+      <section className="mb-8">
+        <h1 className="text-3xl font-bold tracking-tight">
+          {user ? (
+            <>
+              안녕하세요,{" "}
+              <span className="text-primary">
+                {admin ? "관리자" : user.nickname}
+              </span>
+              님 🥕
+            </>
+          ) : (
+            <>우리 동네 중고거래, 🥕 중고마켓</>
+          )}
+        </h1>
+        <p className="mt-2 text-muted-foreground">
+          {user
+            ? admin
+              ? "관리자 계정으로 로그인했습니다. 거래 통계를 확인할 수 있어요."
+              : "물품을 등록하고, 검색하고, 채팅으로 거래를 시작해 보세요."
+            : "로그인하면 물품 등록과 구매 요청, 1:1 채팅을 이용할 수 있어요."}
+        </p>
+      </section>
+
+      {/* 비로그인 */}
+      {!user && (
+        <Card className="max-w-md">
+          <CardHeader>
+            <CardTitle>로그인이 필요해요</CardTitle>
+            <CardDescription>
+              거래 기능을 이용하려면 먼저 로그인하세요.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Link href="/login" className={cn(buttonVariants({ size: "lg" }))}>
+              로그인하러 가기
+            </Link>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* 일반 회원 */}
+      {user && !admin && (
+        <div className="grid gap-4 sm:grid-cols-2">
+          <QuickCard
+            href="/items/new"
+            title="물품 등록"
+            desc="사진과 함께 판매할 물품을 올려보세요."
+            icon={<PlusIcon className="size-5" />}
+          />
+          <QuickCard
+            href="/chat"
+            title="채팅"
+            desc="구매자·판매자와 1:1로 대화하세요."
+            icon={<MessageCircleIcon className="size-5" />}
+          />
+          <Card className="sm:col-span-2 bg-muted/40">
+            <CardContent className="py-4 text-sm text-muted-foreground">
+              물품 목록과 상세 검색(제목·카테고리·가격, AND/OR/NOT)은 다음 단계에서
+              이 홈 화면에 추가됩니다.
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* 관리자 */}
+      {admin && (
+        <QuickCard
+          href="/admin/stats"
+          title="거래 통계"
+          desc="카테고리별 거래 현황과 회원별 거래액 순위를 확인하세요."
+          icon={<ChartColumnBigIcon className="size-5" />}
+          className="max-w-md"
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+      )}
     </div>
+  );
+}
+
+function QuickCard({
+  href,
+  title,
+  desc,
+  icon,
+  className,
+}: {
+  href: string;
+  title: string;
+  desc: string;
+  icon: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <Link href={href} className={cn("group block", className)}>
+      <Card className="h-full transition-shadow hover:shadow-md">
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <span className="flex size-9 items-center justify-center rounded-full bg-primary/10 text-primary">
+              {icon}
+            </span>
+            <CardTitle className="text-lg">{title}</CardTitle>
+          </div>
+          <CardDescription className="pt-1">{desc}</CardDescription>
+        </CardHeader>
+      </Card>
+    </Link>
   );
 }
