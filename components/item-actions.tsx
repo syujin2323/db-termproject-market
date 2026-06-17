@@ -53,6 +53,7 @@ export function ItemActions({
   const [chatLoading, setChatLoading] = useState(false);
 
   const onSale = sellStatus === SELL_STATUS.ON_SALE;
+  const isDone = sellStatus === SELL_STATUS.DONE;
 
   // 판매자(본인) → 받은 요청 목록
   if (isOwner) {
@@ -147,15 +148,15 @@ export function ItemActions({
           </Button>
         )}
 
-        {/* 채팅 */}
+        {/* 채팅 — 거래 완료된 물품은 채팅 시작 불가 */}
         <Button
           size="lg"
           variant="outline"
           className="flex-1"
           onClick={startChat}
-          disabled={chatLoading}
+          disabled={chatLoading || isDone}
         >
-          <MessageCircleIcon /> 채팅하기
+          <MessageCircleIcon /> {isDone ? "거래 완료됨" : "채팅하기"}
         </Button>
       </div>
 

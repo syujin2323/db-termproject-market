@@ -48,6 +48,7 @@ export function ItemBrowser({ initialItems }: { initialItems: Item[] }) {
   const [items, setItems] = useState<Item[]>(initialItems);
   const [loading, setLoading] = useState(false);
   const [advanced, setAdvanced] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   function updateRow(i: number, patch: Partial<Row>) {
     setRows((prev) => prev.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
@@ -63,6 +64,16 @@ export function ItemBrowser({ initialItems }: { initialItems: Item[] }) {
   async function runSearch(e?: FormEvent, sortOverride?: SortKey) {
     e?.preventDefault();
     const sortToUse = sortOverride ?? sort;
+
+    // 가격 범위 검증: 최대가격 < 최소가격이면 경고하고 검색 차단 (TP-6 방법 B)
+    const minRow = rows.find((r) => r.field === "minPrice" && r.value.trim() !== "");
+    const maxRow = rows.find((r) => r.field === "maxPrice" && r.value.trim() !== "");
+    if (minRow && maxRow && Number(maxRow.value) < Number(minRow.value)) {
+      setError("최대 가격은 최소 가격보다 크거나 같아야 합니다.");
+      return;
+    }
+    setError(null);
+
     const conditions = rows
       .filter((r) => r.value.trim() !== "")
       .map((r, i) => (i === 0 ? { field: r.field, value: r.value } : r));
@@ -92,6 +103,7 @@ export function ItemBrowser({ initialItems }: { initialItems: Item[] }) {
     setSort("latest");
     setItems(initialItems);
     setAdvanced(false);
+    setError(null);
   }
 
   return (
@@ -225,6 +237,12 @@ export function ItemBrowser({ initialItems }: { initialItems: Item[] }) {
                 <SearchIcon /> {loading ? "검색 중…" : "검색"}
               </Button>
             </div>
+
+            {error && (
+              <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                {error}
+              </p>
+            )}
           </form>
         </CardContent>
       </Card>
