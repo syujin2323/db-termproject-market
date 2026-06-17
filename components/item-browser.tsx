@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { ItemCard } from "@/components/item-card";
 import { cn } from "@/lib/utils";
-import { CATEGORIES } from "@/lib/constants";
+import { CATEGORIES, SELL_STATUS } from "@/lib/constants";
 import type { Connector, SearchField, SortKey } from "@/lib/search";
 import type { Item } from "@/lib/types";
 
@@ -49,6 +49,7 @@ export function ItemBrowser({ initialItems }: { initialItems: Item[] }) {
   const [loading, setLoading] = useState(false);
   const [advanced, setAdvanced] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string>(""); // "" = 전체
 
   function updateRow(i: number, patch: Partial<Row>) {
     setRows((prev) => prev.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
@@ -61,9 +62,14 @@ export function ItemBrowser({ initialItems }: { initialItems: Item[] }) {
     setRows((prev) => (prev.length > 1 ? prev.filter((_, idx) => idx !== i) : prev));
   }
 
-  async function runSearch(e?: FormEvent, sortOverride?: SortKey) {
+  async function runSearch(
+    e?: FormEvent,
+    sortOverride?: SortKey,
+    statusOverride?: string
+  ) {
     e?.preventDefault();
     const sortToUse = sortOverride ?? sort;
+    const statusToUse = statusOverride ?? statusFilter;
 
     // 가격 범위 검증: 최대가격 < 최소가격이면 경고하고 검색 차단 (TP-6 방법 B)
     const minRow = rows.find((r) => r.field === "minPrice" && r.value.trim() !== "");
@@ -83,6 +89,7 @@ export function ItemBrowser({ initialItems }: { initialItems: Item[] }) {
       const qs = new URLSearchParams({
         conditions: JSON.stringify(conditions),
         sort: sortToUse,
+        status: statusToUse,
       });
       const res = await fetch(`/api/items?${qs.toString()}`);
       const data = await res.json();
@@ -104,10 +111,38 @@ export function ItemBrowser({ initialItems }: { initialItems: Item[] }) {
     setItems(initialItems);
     setAdvanced(false);
     setError(null);
+    setStatusFilter("");
   }
 
   return (
     <div>
+      {/* 상태 빠른 필터 */}
+      <div className="mb-4 flex flex-wrap gap-1.5">
+        {[
+          { v: "", label: "전체" },
+          { v: SELL_STATUS.ON_SALE, label: "판매 중" },
+          { v: SELL_STATUS.RESERVED, label: "예약 중" },
+          { v: SELL_STATUS.DONE, label: "거래 완료" },
+        ].map((s) => (
+          <button
+            key={s.v || "all"}
+            type="button"
+            onClick={() => {
+              setStatusFilter(s.v);
+              runSearch(undefined, undefined, s.v);
+            }}
+            className={cn(
+              "rounded-full border px-3.5 py-1.5 text-sm transition-colors",
+              statusFilter === s.v
+                ? "border-primary bg-primary/10 font-medium text-primary"
+                : "text-muted-foreground hover:bg-muted"
+            )}
+          >
+            {s.label}
+          </button>
+        ))}
+      </div>
+
       {/* 검색 패널 */}
       <Card className="mb-5">
         <CardContent>

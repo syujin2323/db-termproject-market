@@ -25,7 +25,11 @@ export async function GET(req: NextRequest) {
         conditions = [];
       }
     }
-    const { where, orderBy, binds } = buildItemSearch(conditions, sp.get("sort"));
+    const { where, orderBy, binds } = buildItemSearch(
+      conditions,
+      sp.get("sort"),
+      sp.get("status")
+    );
     const sql = `${ITEM_SQL.listSelect} ${where} ${orderBy}`;
     const items = await query<Item>(sql, binds);
     return NextResponse.json({ items });

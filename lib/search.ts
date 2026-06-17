@@ -1,6 +1,9 @@
 // 물품 검색용 동적 WHERE/ORDER BY 조립기 (단계 3).
 // RISS식 상세검색: 여러 조건을 AND/OR/NOT 으로 조합한다.
 // 값은 전부 바인드 변수(:pN)로만 넣어 SQL 인젝션을 방지한다.
+import { SELL_STATUS } from "./constants";
+
+const STATUS_VALUES: string[] = Object.values(SELL_STATUS);
 
 export type Connector = "AND" | "OR" | "NOT";
 export type SearchField =
@@ -58,7 +61,8 @@ export interface BuiltSearch {
  */
 export function buildItemSearch(
   rawConditions: unknown,
-  sort: unknown
+  sort: unknown,
+  statusFilter?: unknown
 ): BuiltSearch {
   const conditions = Array.isArray(rawConditions) ? rawConditions : [];
   const binds: Record<string, string | number> = {};
@@ -105,12 +109,19 @@ export function buildItemSearch(
     }
   });
 
+  // 상태 빠른 필터(판매 중/예약 중/거래 완료)를 검색 조건과 AND로 결합한다.
+  let where = clause;
+  if (typeof statusFilter === "string" && STATUS_VALUES.includes(statusFilter)) {
+    binds.status = statusFilter;
+    where = where ? `(${where}) AND i.sellStatus = :status` : `i.sellStatus = :status`;
+  }
+
   const sortKey: SortKey = SORT_KEYS.includes(sort as SortKey)
     ? (sort as SortKey)
     : "latest";
 
   return {
-    where: clause ? `WHERE ${clause}` : "",
+    where: where ? `WHERE ${where}` : "",
     orderBy: `ORDER BY ${ORDER_BY[sortKey]}`,
     binds,
   };
