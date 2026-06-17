@@ -26,7 +26,7 @@ export const ITEM_SQL = {
        regDateTime, sellStatus, pic1, pic2, pic3)
     VALUES
       (:cno, :itemNo, :title, :description, :category, :price, :tradePlace,
-       SYSTIMESTAMP, :sellStatus, :pic1, :pic2, :pic3)`,
+       LOCALTIMESTAMP, :sellStatus, :pic1, :pic2, :pic3)`,
 
   /** 상세 조회 (+ 판매자 닉네임, 사진 보유 슬롯 수). */
   getById: `
@@ -96,7 +96,7 @@ export const PURCHASE_SQL = {
   /** 구매 요청 등록 (요청 금액 + 메시지) */
   insert: `
     INSERT INTO purchasereq (requestCno, cno, itemNo, reqDateTime, reqPrice, reqMessage)
-    VALUES (:requestCno, :cno, :itemNo, SYSTIMESTAMP, :reqPrice, :reqMessage)`,
+    VALUES (:requestCno, :cno, :itemNo, LOCALTIMESTAMP, :reqPrice, :reqMessage)`,
 
   /** 한 물품의 받은 요청 목록 (+ 요청자 닉네임) — 판매자 화면 */
   listForItem: `
@@ -118,7 +118,7 @@ export const PURCHASE_SQL = {
    * 기록한다(48h 자동취소 타이머 시작). rowsAffected=0이면 이미 예약/거래완료 상태.
    */
   approveReserve: `
-    UPDATE item SET sellStatus = :reserved, resDateTime = SYSTIMESTAMP
+    UPDATE item SET sellStatus = :reserved, resDateTime = LOCALTIMESTAMP
     WHERE cno = :cno AND itemNo = :itemNo AND sellStatus = :onSale`,
 
   /** 승인된 요청자(requestCno)를 제외한 나머지 구매 요청 자동 삭제 */
@@ -139,7 +139,7 @@ export const CHAT_SQL = {
   /** 방 생성 (roomNo는 IDENTITY → RETURNING으로 받음) */
   createRoom: `
     INSERT INTO chatroom (receiveCno, cno, itemNo, createDateTime)
-    VALUES (:receiveCno, :cno, :itemNo, SYSTIMESTAMP)
+    VALUES (:receiveCno, :cno, :itemNo, LOCALTIMESTAMP)
     RETURNING roomNo INTO :roomNo`,
 
   /** 방 1개 상세 (+ 물품 제목/판매자·구매자 닉네임) */
@@ -200,7 +200,7 @@ export const CHAT_SQL = {
   /** 메시지 전송 (sender 'S'/'B', 기본 안읽음 'N') */
   insertMessage: `
     INSERT INTO message (roomNo, sender, sentDateTime, content, isRead)
-    VALUES (:roomNo, :sender, SYSTIMESTAMP, :content, 'N')`,
+    VALUES (:roomNo, :sender, LOCALTIMESTAMP, :content, 'N')`,
 
   /** 내가 방에 들어가면 상대가 보낸 안 읽은 메시지를 읽음 처리 */
   markRead: `
@@ -219,14 +219,14 @@ export const RESERVATION_SQL = {
       SELECT 1 FROM item i
       WHERE i.cno = pr.cno AND i.itemNo = pr.itemNo
         AND i.sellStatus = :reserved
-        AND i.resDateTime < SYSTIMESTAMP - NUMTODSINTERVAL(:hours, 'HOUR')
+        AND i.resDateTime < LOCALTIMESTAMP - NUMTODSINTERVAL(:hours, 'HOUR')
     )`,
 
   /** 48시간 초과한 '예약 중' 물품을 '판매 중'으로 되돌리고 예약시각을 비운다. */
   revertExpired: `
     UPDATE item SET sellStatus = :onSale, resDateTime = NULL
     WHERE sellStatus = :reserved
-      AND resDateTime < SYSTIMESTAMP - NUMTODSINTERVAL(:hours, 'HOUR')`,
+      AND resDateTime < LOCALTIMESTAMP - NUMTODSINTERVAL(:hours, 'HOUR')`,
 };
 
 // 관리자 통계 (단계 9). 거래 완료(:done) 물품의 finalPrice 기준.

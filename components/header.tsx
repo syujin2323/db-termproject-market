@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { getCurrentUser, isAdmin } from "@/lib/auth";
 import { AuthArea } from "@/components/auth-area";
+import { Logo } from "@/components/logo";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -22,9 +23,7 @@ export async function Header() {
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/85 backdrop-blur">
       <div className="mx-auto flex h-14 max-w-5xl items-center gap-1 px-4">
-        <Link href="/" className="mr-3 text-lg font-bold tracking-tight">
-          <span className="text-primary">🥕 중고마켓</span>
-        </Link>
+        <Logo />
 
         <nav className="flex items-center gap-0.5">
           {/* 일반 회원: 등록/채팅 */}
