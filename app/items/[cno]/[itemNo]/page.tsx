@@ -7,6 +7,7 @@ import { sweepExpiredReservations } from "@/lib/reservation";
 import { getCurrentUser } from "@/lib/auth";
 import { StatusBadge } from "@/components/status-badge";
 import { ItemActions } from "@/components/item-actions";
+import { ReservationTimer } from "@/components/reservation-timer";
 import { Separator } from "@/components/ui/separator";
 import { formatPrice, formatDateTime } from "@/lib/format";
 import { SELL_STATUS } from "@/lib/constants";
@@ -42,6 +43,7 @@ export default async function ItemDetailPage({
   const photoCount = item.photoCount ?? 0;
   const photoIndexes = Array.from({ length: photoCount }, (_, i) => i + 1);
   const isDone = item.sellStatus === SELL_STATUS.DONE;
+  const isReserved = item.sellStatus === SELL_STATUS.RESERVED;
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-6">
@@ -89,6 +91,11 @@ export default async function ItemDetailPage({
         {isDone && item.finalPrice != null && (
           <p className="mt-1 text-sm text-muted-foreground">
             최종 거래가 <b className="text-foreground">{formatPrice(item.finalPrice)}</b>
+          </p>
+        )}
+        {isReserved && (
+          <p className="mt-2 text-sm text-amber-700">
+            <ReservationTimer resDateTime={item.resDateTime} />
           </p>
         )}
 

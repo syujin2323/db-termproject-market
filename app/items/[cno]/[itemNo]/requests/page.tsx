@@ -10,6 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/status-badge";
 import { ApproveButton } from "@/components/approve-button";
 import { CompleteTradeButton } from "@/components/complete-trade-button";
+import { ReservationTimer } from "@/components/reservation-timer";
 import { formatPrice, formatDateTime } from "@/lib/format";
 import { SELL_STATUS } from "@/lib/constants";
 import type { Item, PurchaseReq } from "@/lib/types";
@@ -63,9 +64,14 @@ export default async function ReceivedRequestsPage({
       {reserved && (
         <Card className="mb-4 border-amber-200 bg-amber-50">
           <CardContent className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-sm text-amber-800">
-              예약된 거래입니다. 거래가 끝나면 최종 금액을 입력해 완료하세요.
-            </p>
+            <div className="min-w-0">
+              <p className="text-sm text-amber-800">
+                예약된 거래입니다. 거래가 끝나면 최종 금액을 입력해 완료하세요.
+              </p>
+              <p className="mt-1 text-xs text-amber-700">
+                <ReservationTimer resDateTime={item.resDateTime} />
+              </p>
+            </div>
             <CompleteTradeButton
               cno={cno}
               itemNo={itemNoNum}
