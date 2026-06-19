@@ -64,6 +64,15 @@ async function reset(conn) {
   }
   await conn.commit();
 
+  // 예약 중 물품의 예약시각(resDateTime)을 '지금'으로 갱신한다.
+  // 백업의 예약시각이 과거라, 복원 직후 화면 진입 시 48시간 자동취소(단계 8)에
+  // 곧바로 사라지는 것을 막기 위함. → reset 직후에는 항상 신선한 '예약 중' 물품이 존재.
+  await conn.execute(
+    `UPDATE item SET resDateTime = LOCALTIMESTAMP WHERE sellStatus = :reserved`,
+    { reserved: "예약 중" }
+  );
+  await conn.commit();
+
   // identity 카운터를 현재 최대값 다음으로 맞춘다(이후 앱이 새로 만드는 번호 충돌 방지).
   // 가능하면 원래대로 GENERATED ALWAYS 로 되돌린다(실패해도 앱 동작엔 영향 없음).
   for (const [tbl, col] of [
